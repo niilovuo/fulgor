@@ -1,12 +1,20 @@
 @group(0) @binding(0)
 var<storage, read_write> output: array<u32>;
 
-struct ray {
+@group(0) @binding(1) var<uniform> camera: CameraUniform;
+
+struct Ray {
     origin: point3,
     direction: vec3f,
 }
 
-fn ray_color(r: ray) -> color {
+struct CameraUniform {
+    camera_center: vec3<f32>,
+    focal_length: f32,
+    viewport_height: f32,
+}
+
+fn ray_color(r: Ray) -> color {
     let unit_direction: vec3f = normalize(r.direction);
     let a = 0.5 * (unit_direction.y + 1.0);
 
@@ -22,7 +30,7 @@ fn ray_color(r: ray) -> color {
     return pixel_color;
 }
 
-fn hit_sphere(center: vec3<f32>, radius: f32, r: ray) -> f32 {
+fn hit_sphere(center: vec3<f32>, radius: f32, r: Ray) -> f32 {
     let oc: vec3f = center - r.origin;
     let a: f32 = dot(r.direction, r.direction);
     let b: f32 = -2.0 * dot(r.direction, oc);
@@ -36,32 +44,31 @@ fn hit_sphere(center: vec3<f32>, radius: f32, r: ray) -> f32 {
     }
 }
 
-// TODO: Move Image and Camera specs to rust code and allow for user input
+// TODO: Move Image specs to rust code and allow for user input
 // ====================  Image  ===================== //
 const aspect_ratio: f32 = 2.0 / 1.0;
 const image_width: u32 = 1024u;
 const image_height: u32 = u32(f32(image_width) / aspect_ratio);
 // ====================  /Image  ==================== //
 
-// ====================  Camera  ==================== //
-const focal_length: f32 = 1.0;
-const viewport_height: f32 = 2.0;
-const viewport_width: f32 = viewport_height * (f32(image_width) / f32(image_height));
-const camera_center: point3 = vec3(0, 0, 0);
-const viewport_u: vec3f = vec3(viewport_width, 0, 0);
-const viewport_v: vec3f = vec3(0, -viewport_height, 0);
-const pixel_delta_u = viewport_u / f32(image_width);
-const pixel_delta_v = viewport_v / f32(image_height);
-const viewport_upper_left = camera_center - vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
-const pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
-// ====================  /Camera  =================== //
-
 @compute @workgroup_size(16, 16)
 fn main(@builtin(global_invocation_id) global_id: vec3<u32>) {
+    // Camera parameters
+    let camera_center = camera.camera_center;
+    let focal_length = camera.focal_length;
+    let viewport_height = camera.viewport_height;
+    let viewport_width: f32 = viewport_height * (f32(image_width) / f32(image_height));
+    let viewport_u: vec3f = vec3(viewport_width, 0, 0);
+    let viewport_v: vec3f = vec3(0, -viewport_height, 0);
+    let pixel_delta_u = viewport_u / f32(image_width);
+    let pixel_delta_v = viewport_v / f32(image_height);
+    let viewport_upper_left = camera_center - vec3(0, 0, focal_length) - viewport_u / 2 - viewport_v / 2;
+    let pixel00_loc = viewport_upper_left + 0.5 * (pixel_delta_u + pixel_delta_v);
+
 
     let pixel_center: vec3f = pixel00_loc + (f32(global_id.x) * pixel_delta_u) + (f32(global_id.y) * pixel_delta_v);
     let ray_direction: vec3f = pixel_center - camera_center;
-    let r: ray = ray(camera_center, ray_direction);
+    let r: Ray = Ray(camera_center, ray_direction);
 
     let pixel_color: color = ray_color(r);
 
@@ -80,6 +87,6 @@ fn get_packed_rgba_color(c: color) -> u32 {
     return (r | (g << 8u) | (b << 16u) | (255u << 24u));
 }
 
-fn ray_at(r: ray, t: f32) -> vec3<f32> {
+fn ray_at(r: Ray, t: f32) -> vec3<f32> {
     return r.origin + t * r.direction;
 }
