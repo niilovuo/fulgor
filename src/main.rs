@@ -1,6 +1,6 @@
+mod camera;
 mod renderer;
 mod scene;
-mod camera;
 
 fn main() {
     env_logger::init();

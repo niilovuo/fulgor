@@ -2,11 +2,7 @@ pub fn load() {
     let obj_file = "/home/niilo/Programming/rt_exp/bunny.obj";
 
     let (models, materials) =
-        tobj::load_obj(
-            &obj_file,
-            &tobj::LoadOptions::default()
-        )
-        .expect("Failed to OBJ load file");
+        tobj::load_obj(&obj_file, &tobj::LoadOptions::default()).expect("Failed to OBJ load file");
 
     let materials = materials.expect("Failed to load MTL file");
     println!("Number of models          = {}", models.len());

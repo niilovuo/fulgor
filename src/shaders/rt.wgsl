@@ -40,7 +40,7 @@ fn hit_sphere(center: vec3<f32>, radius: f32, r: ray) -> f32 {
 // ====================  Image  ===================== //
 const aspect_ratio: f32 = 2.0 / 1.0;
 const image_width: u32 = 1024u;
-const image_height: u32 = u32(f32(image_width) / aspect_ratio);  
+const image_height: u32 = u32(f32(image_width) / aspect_ratio);
 // ====================  /Image  ==================== //
 
 // ====================  Camera  ==================== //
